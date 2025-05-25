@@ -1,44 +1,139 @@
-name: Wails build
+name: Wails Build & Release
 
 on:
   push:
     tags:
-    # Match any new tag
-      - '*'
+      # Match tags like v1.0.0, v2.3.4-beta
+      - 'v*'
 
 env:
   # Necessary for most environments as build failure can occur due to OOM issues
   NODE_OPTIONS: "--max-old-space-size=4096"
+  # Define your app's name here if it's not automatically derived or if you want to be specific
+  # If your wails.json 'name' field is good, you might not need this for 'build-name'
+  APP_NAME: "App" # Or use ${{ github.event.repository.name }} for repo name
+
+permissions:
+  contents: write # Required to create releases and upload release assets
 
 jobs:
   build:
     strategy:
-    # Failure in one platform build won't impact the others
       fail-fast: false
       matrix:
-        build:
-          - name: 'App'
-            platform:  'linux/amd64'
-            os: 'ubuntu-latest'
-          - name: 'App'
-            platform:  'windows/amd64'
-            os: 'windows-latest'
-          - name: 'App'
-            platform:  'darwin/universal'
-            os: 'macos-latest'
+        include:
+          - os: ubuntu-latest
+            platform: linux/amd64
+            asset_name_suffix: linux_amd64 # For the final asset in the release
+            # Wails output for linux might be just the app name, or .AppImage if configured
+            # The wails-build-action usually outputs the binary directly.
+            # If you make it create an AppImage or .deb, adjust asset_name_suffix
+            # and potentially the asset_glob_pattern in release job.
 
-    runs-on: ${{ matrix.build.os }}
+          - os: windows-latest
+            platform: windows/amd64
+            asset_name_suffix: windows_amd64.exe
+
+          - os: macos-latest
+            platform: darwin/universal # Builds a universal binary for Intel and Apple Silicon
+            asset_name_suffix: darwin_universal.dmg
+
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: recursive # Important if your project uses git submodules
 
-      - name: Build wails
-        uses: dAppServer/wails-build-action@v2.2
-        id: build
+      # Optional but recommended: Setup Node.js explicitly
+      # The wails-build-action might do this, but being explicit gives more control
+      # Match the Node.js version your Angular project uses
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          build-name: ${{ matrix.build.name }}
-          build-platform: ${{ matrix.build.platform }}
-          package: false
-          go-version: '1.20'
+          node-version: 'lts/*' # Or '20', 'lts/*' etc.
+
+      # Optional but recommended: Setup Go explicitly
+      # Match the Go version your Wails project uses or a compatible newer one
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22' # Wails v2 works well with Go 1.20+
+
+      # Optional: Install Wails CLI explicitly if you need a very specific version
+      # The dAppServer/wails-build-action usually installs a suitable version
+      # - name: Install Wails CLI
+      #   run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Build Wails Application
+        uses: dAppServer/wails-build-action@v2 # Using @v2 for the latest v2.x.x release
+        id: wails_build
+        with:
+          # This is the name of your executable/bundle *before* extensions like .exe or .dmg
+          # It should match the 'name' field in your wails.json or be what you want the binary to be called.
+          build-name: ${{ env.APP_NAME }}
+          build-platform: ${{ matrix.platform }}
+          package: true # IMPORTANT: This creates the distributable package
+          go-version: '1.22' # Ensure this matches your setup-go or is compatible
+          # Optional: If your frontend code is not in a 'frontend' directory:
+          # frontend-install-dir: './my-angular-app-folder'
+          # frontend-build-command: 'npm run build:prod' # If your build script is different
+
+          # For code signing (highly recommended for distribution):
+          # You'll need to set these as secrets in your GitHub repository settings
+          # macos-codesign-identity: ${{ secrets.MACOS_CODESIGN_IDENTITY }} # e.g., "Developer ID Application: Your Name (TEAMID)"
+          # macos-notarize-identity: ${{ secrets.MACOS_NOTARIZE_IDENTITY }} # appleid:user@example.com app-specific-password:xxxx-xxxx-xxxx-xxxx teamid:TEAMID
+          # windows-codesign-cert: ${{ secrets.WINDOWS_CODESIGN_CERT_P12_BASE64 }} # Base64 encoded PFX/P12 file
+          # windows-codesign-password: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
+
+      - name: Prepare artifact name
+        id: artifact_details
+        # The wails_build.outputs.asset_name is the direct output name like "App.exe" or "App.dmg"
+        # We construct a more descriptive name for the GitHub artifact bundle.
+        run: |
+          echo "asset_file_name=${{ steps.wails_build.outputs.asset_name }}" >> $GITHUB_OUTPUT
+          echo "artifact_upload_name=${{ env.APP_NAME }}-${{ github.ref_name }}-${{ matrix.asset_name_suffix }}" >> $GITHUB_OUTPUT
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.artifact_details.outputs.artifact_upload_name }}
+          path: ${{ steps.wails_build.outputs.asset_path }} # This is the path to the generated distributable
+
+  create_release:
+    name: Create GitHub Release
+    needs: build # This job runs only after all 'build' jobs complete successfully
+    runs-on: ubuntu-latest
+    # Only run for tags
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        # No 'name' specified, downloads all artifacts from this workflow run
+        # Each artifact will be in its own directory named after the artifact.
+        # e.g. ./App-v1.0.0-linux_amd64/App
+        #      ./App-v1.0.0-windows_amd64.exe/App.exe
+        #      ./App-v1.0.0-darwin_universal.dmg/App.dmg
+
+      - name: List downloaded files (for debugging)
+        run: ls -R
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # GITHUB_TOKEN is automatically provided by GitHub Actions
+          tag_name: ${{ github.ref_name }} # e.g., v1.0.0
+          name: Release ${{ github.ref_name }}
+          body: | # You can customize the release notes body
+            Automated release for ${{ github.ref_name }}
+
+            **Assets:**
+            (See attached files)
+          draft: false # Set to true to create a draft release
+          prerelease: contains(github.ref, '-beta') || contains(github.ref, '-rc') # Mark as pre-release if tag contains -beta or -rc
+          files: | # Glob pattern to find all artifacts in their subdirectories
+            ./*/*
+            # This will pick up files like:
+            # ./App-v1.0.0-linux_amd64/App
+            # ./App-v1.0.0-windows_amd64.exe/App.exe
+            # ./App-v1.0.0-darwin_universal.dmg/App.dmg
