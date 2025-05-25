@@ -83,17 +83,16 @@ jobs:
 
       - name: Normalize and move build output
         run: |
-          OS_NAME="${{ matrix.os }}"
+          OS_NAME="${{ matrix.build.platform }}"
           mkdir -p release
-
           case "$OS_NAME" in
-            ubuntu-latest)
+            'linux/amd64')
               cp build/bin/t2no release/t2no-linux
               ;;
-            windows-latest)
+            'windows/amd64')
               cp build/bin/t2no.exe release/t2no-windows.exe
               ;;
-            macos-latest)
+            'darwin/universal')
               cp build/bin/t2no.app/Contents/MacOS/t2no release/t2no-macos
               ;;
           esac
