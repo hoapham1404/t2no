@@ -95,7 +95,7 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: dist
+          path: build/bin 
           merge-multiple: true  # <-- This is important!
 
       - name: Upload release binaries
@@ -103,10 +103,9 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
-          files: dist/*
+          files: build/bin/** 
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
-          allow_update: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
