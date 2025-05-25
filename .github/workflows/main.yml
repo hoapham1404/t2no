@@ -97,7 +97,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
-          files: ./build/bin/**
+          files: dist/*
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
