@@ -1,0 +1,532 @@
+From 1409e83591b38b2a8c6e9a9a6ab312ad1b9890e6 Mon Sep 17 00:00:00 2001
+From: superidol <superidol@idontgiveashit.com>
+Date: Mon, 26 May 2025 22:38:50 +0700
+Subject: [PATCH] initial some basic layout in frontend
+
+---
+ .editorconfig                                 | 42 ++++++++++++++++++
+ frontend/angular.json                         | 11 +++--
+ frontend/src/app/app.component.ts             | 44 +++++++++++++++----
+ frontend/src/app/app.config.ts                | 13 ++----
+ frontend/src/app/app.routes.ts                | 11 ++++-
+ .../src/app/pages/first/first.component.html  |  1 +
+ .../src/app/pages/first/first.component.ts    | 11 +++++
+ .../pages/home-page/home-page.component.ts    | 15 +++++++
+ .../pages/not-found/not-found.component.html  |  1 +
+ .../pages/not-found/not-found.component.ts    | 10 +++++
+ .../app/pages/second/second.component.html    |  1 +
+ .../src/app/pages/second/second.component.ts  | 11 +++++
+ .../components/footer/footer.component.html   |  1 +
+ .../components/footer/footer.component.ts     | 10 +++++
+ .../components/header/header.component.css    |  3 ++
+ .../components/header/header.component.html   |  8 ++++
+ .../components/header/header.component.ts     | 25 +++++++++++
+ .../components/navbar/navbar.component.css    | 14 ++++++
+ .../components/navbar/navbar.component.html   | 13 ++++++
+ .../components/navbar/navbar.component.ts     | 12 +++++
+ .../components/sidebar/sidebar.component.css  |  0
+ .../components/sidebar/sidebar.component.html |  1 +
+ .../components/sidebar/sidebar.component.ts   | 10 +++++
+ frontend/src/styles.css                       | 31 ++++++-------
+ 24 files changed, 257 insertions(+), 42 deletions(-)
+ create mode 100644 .editorconfig
+ create mode 100644 frontend/src/app/pages/first/first.component.html
+ create mode 100644 frontend/src/app/pages/first/first.component.ts
+ create mode 100644 frontend/src/app/pages/home-page/home-page.component.ts
+ create mode 100644 frontend/src/app/pages/not-found/not-found.component.html
+ create mode 100644 frontend/src/app/pages/not-found/not-found.component.ts
+ create mode 100644 frontend/src/app/pages/second/second.component.html
+ create mode 100644 frontend/src/app/pages/second/second.component.ts
+ create mode 100644 frontend/src/app/shared/components/footer/footer.component.html
+ create mode 100644 frontend/src/app/shared/components/footer/footer.component.ts
+ create mode 100644 frontend/src/app/shared/components/header/header.component.css
+ create mode 100644 frontend/src/app/shared/components/header/header.component.html
+ create mode 100644 frontend/src/app/shared/components/header/header.component.ts
+ create mode 100644 frontend/src/app/shared/components/navbar/navbar.component.css
+ create mode 100644 frontend/src/app/shared/components/navbar/navbar.component.html
+ create mode 100644 frontend/src/app/shared/components/navbar/navbar.component.ts
+ create mode 100644 frontend/src/app/shared/components/sidebar/sidebar.component.css
+ create mode 100644 frontend/src/app/shared/components/sidebar/sidebar.component.html
+ create mode 100644 frontend/src/app/shared/components/sidebar/sidebar.component.ts
+
+diff --git a/.editorconfig b/.editorconfig
+new file mode 100644
+index 0000000..551d92b
+--- /dev/null
++++ b/.editorconfig
+@@ -0,0 +1,42 @@
++# EditorConfig is awesome: https://EditorConfig.org
++
++root = true
++
++# Global settings for all files
++[*]
++charset = utf-8
++end_of_line = lf
++insert_final_newline = true
++trim_trailing_whitespace = true
++
++# General code files
++[*.{ts,js,html,scss,css,json,jsonc}]
++indent_style = space
++indent_size = 2
++
++# Go files
++[*.go]
++indent_style = tab
++indent_size = 4
++trim_trailing_whitespace = true
++insert_final_newline = true
++
++# Markdown
++[*.md]
++trim_trailing_whitespace = false
++insert_final_newline = true
++
++# YAML
++[*.{yml,yaml}]
++indent_style = space
++indent_size = 2
++
++# Shell scripts
++[*.sh]
++indent_style = space
++indent_size = 2
++
++# Ignore minified files
++[*.min.*]
++insert_final_newline = false
++trim_trailing_whitespace = false
+diff --git a/frontend/angular.json b/frontend/angular.json
+index a0a4cbb..d87cd02 100644
+--- a/frontend/angular.json
++++ b/frontend/angular.json
+@@ -7,8 +7,10 @@
+       "projectType": "application",
+       "schematics": {
+         "@schematics/angular:component": {
+-          "inlineTemplate": true,
+-          "inlineStyle": true,
++          "style": "css",
++          "standalone": true,
++          "inlineTemplate": false,
++          "inlineStyle": false,
+           "skipTests": true
+         },
+         "@schematics/angular:class": {
+@@ -51,10 +53,7 @@
+                 "input": "public"
+               }
+             ],
+-            "styles": [
+-              "src/custom-theme.scss",
+-              "src/styles.css"
+-            ],
++            "styles": ["src/custom-theme.scss", "src/styles.css"],
+             "scripts": []
+           },
+           "configurations": {
+diff --git a/frontend/src/app/app.component.ts b/frontend/src/app/app.component.ts
+index 9c9fa49..c8a13cd 100644
+--- a/frontend/src/app/app.component.ts
++++ b/frontend/src/app/app.component.ts
+@@ -1,18 +1,44 @@
+ import { Component } from "@angular/core";
+ import { RouterOutlet } from "@angular/router";
+ import { MatSlideToggleModule } from "@angular/material/slide-toggle";
++import { MatSidenavModule } from "@angular/material/sidenav";
++import { HeaderComponent } from "./shared/components/header/header.component";
++import { FooterComponent } from "./shared/components/footer/footer.component";
++import { SidebarComponent } from "./shared/components/sidebar/sidebar.component";
+ 
+ @Component({
+-	standalone: true,
+-	selector: "app-root",
+-	imports: [RouterOutlet, MatSlideToggleModule],
+-	template: `
+-    <h1>Welcome to {{ title }}!</h1>
+-    <mat-slide-toggle>Toggle me</mat-slide-toggle>
+-    <router-outlet />
++  standalone: true,
++  selector: "app-root",
++  imports: [
++    RouterOutlet,
++    MatSlideToggleModule,
++    MatSidenavModule,
++    HeaderComponent,
++    FooterComponent,
++    SidebarComponent,
++  ],
++  template: `
++    <app-header [sidenav]="sidenav" />
++    <mat-drawer-container class="container">
++      <mat-drawer #sidenav mode="side" opened>
++        <app-sidebar class="sidebar" />
++      </mat-drawer>
++      <mat-drawer-content>
++        <main class="content">
++          <router-outlet />
++        </main>
++        <app-footer class="footer" />
++      </mat-drawer-content>
++    </mat-drawer-container>
+   `,
+-	styles: [],
++  styles: [
++    `
++      .container {
++        height: 100%;
++      }
++    `,
++  ],
+ })
+ export class AppComponent {
+-	title = "frontend";
++  title = "frontend";
+ }
+diff --git a/frontend/src/app/app.config.ts b/frontend/src/app/app.config.ts
+index 1c19fa6..c852810 100644
+--- a/frontend/src/app/app.config.ts
++++ b/frontend/src/app/app.config.ts
+@@ -2,15 +2,10 @@ import { ApplicationConfig, provideZoneChangeDetection } from "@angular/core";
+ import { provideRouter, withHashLocation } from "@angular/router";
+ 
+ import { routes } from "./app.routes";
+-import { HashLocationStrategy, LocationStrategy } from "@angular/common";
+ 
+ export const appConfig: ApplicationConfig = {
+-  providers: [
+-    provideZoneChangeDetection({ eventCoalescing: true }),
+-    provideRouter(routes, withHashLocation()),
+-    {
+-      provide: LocationStrategy,
+-      useClass: HashLocationStrategy,
+-    },
+-  ],
++	providers: [
++		provideZoneChangeDetection({ eventCoalescing: true }),
++		provideRouter(routes, withHashLocation()),
++	],
+ };
+diff --git a/frontend/src/app/app.routes.ts b/frontend/src/app/app.routes.ts
+index 50bace4..e0400e3 100644
+--- a/frontend/src/app/app.routes.ts
++++ b/frontend/src/app/app.routes.ts
+@@ -1,3 +1,12 @@
+ import { Routes } from "@angular/router";
++import { HomePageComponent } from "./pages/home-page/home-page.component";
++import { FirstComponent } from "./pages/first/first.component";
++import { SecondComponent } from "./pages/second/second.component";
++import { NotFoundComponent } from "./pages/not-found/not-found.component";
+ 
+-export const routes: Routes = [];
++export const routes: Routes = [
++  { path: "", component: HomePageComponent },
++  { path: "first", component: FirstComponent },
++  { path: "second", component: SecondComponent },
++  { path: "**", component: NotFoundComponent },
++];
+diff --git a/frontend/src/app/pages/first/first.component.html b/frontend/src/app/pages/first/first.component.html
+new file mode 100644
+index 0000000..082be55
+--- /dev/null
++++ b/frontend/src/app/pages/first/first.component.html
+@@ -0,0 +1 @@
++<p>first works!</p>
+diff --git a/frontend/src/app/pages/first/first.component.ts b/frontend/src/app/pages/first/first.component.ts
+new file mode 100644
+index 0000000..b0e579b
+--- /dev/null
++++ b/frontend/src/app/pages/first/first.component.ts
+@@ -0,0 +1,11 @@
++import { Component } from '@angular/core';
++
++@Component({
++  selector: 'app-first',
++  imports: [],
++  templateUrl: './first.component.html',
++  styles: ``
++})
++export class FirstComponent {
++
++}
+diff --git a/frontend/src/app/pages/home-page/home-page.component.ts b/frontend/src/app/pages/home-page/home-page.component.ts
+new file mode 100644
+index 0000000..a0ddf0d
+--- /dev/null
++++ b/frontend/src/app/pages/home-page/home-page.component.ts
+@@ -0,0 +1,15 @@
++import { Component } from '@angular/core';
++
++@Component({
++  selector: 'app-home-page',
++  imports: [],
++  template: `
++    <p>
++      home-page works!
++    </p>
++  `,
++  styles: ``
++})
++export class HomePageComponent {
++
++}
+diff --git a/frontend/src/app/pages/not-found/not-found.component.html b/frontend/src/app/pages/not-found/not-found.component.html
+new file mode 100644
+index 0000000..8071020
+--- /dev/null
++++ b/frontend/src/app/pages/not-found/not-found.component.html
+@@ -0,0 +1 @@
++<p>not-found works!</p>
+diff --git a/frontend/src/app/pages/not-found/not-found.component.ts b/frontend/src/app/pages/not-found/not-found.component.ts
+new file mode 100644
+index 0000000..40dcaeb
+--- /dev/null
++++ b/frontend/src/app/pages/not-found/not-found.component.ts
+@@ -0,0 +1,10 @@
++import { Component } from "@angular/core";
++
++@Component({
++  standalone: true,
++  selector: "app-not-found",
++  imports: [],
++  templateUrl: "./not-found.component.html",
++  styles: ``,
++})
++export class NotFoundComponent { }
+diff --git a/frontend/src/app/pages/second/second.component.html b/frontend/src/app/pages/second/second.component.html
+new file mode 100644
+index 0000000..721267f
+--- /dev/null
++++ b/frontend/src/app/pages/second/second.component.html
+@@ -0,0 +1 @@
++<p>second works!</p>
+diff --git a/frontend/src/app/pages/second/second.component.ts b/frontend/src/app/pages/second/second.component.ts
+new file mode 100644
+index 0000000..33b92ba
+--- /dev/null
++++ b/frontend/src/app/pages/second/second.component.ts
+@@ -0,0 +1,11 @@
++import { Component } from '@angular/core';
++
++@Component({
++  selector: 'app-second',
++  imports: [],
++  templateUrl: './second.component.html',
++  styles: ``
++})
++export class SecondComponent {
++
++}
+diff --git a/frontend/src/app/shared/components/footer/footer.component.html b/frontend/src/app/shared/components/footer/footer.component.html
+new file mode 100644
+index 0000000..93dfd8f
+--- /dev/null
++++ b/frontend/src/app/shared/components/footer/footer.component.html
+@@ -0,0 +1 @@
++<footer>This is footer</footer>
+diff --git a/frontend/src/app/shared/components/footer/footer.component.ts b/frontend/src/app/shared/components/footer/footer.component.ts
+new file mode 100644
+index 0000000..b391e31
+--- /dev/null
++++ b/frontend/src/app/shared/components/footer/footer.component.ts
+@@ -0,0 +1,10 @@
++import { Component } from "@angular/core";
++
++@Component({
++  standalone: true,
++  selector: "app-footer",
++  imports: [],
++  templateUrl: "./footer.component.html",
++  styles: ``,
++})
++export class FooterComponent { }
+diff --git a/frontend/src/app/shared/components/header/header.component.css b/frontend/src/app/shared/components/header/header.component.css
+new file mode 100644
+index 0000000..5438f4f
+--- /dev/null
++++ b/frontend/src/app/shared/components/header/header.component.css
+@@ -0,0 +1,3 @@
++.flex-fill {
++  flex: 1 1 auto;
++}
+diff --git a/frontend/src/app/shared/components/header/header.component.html b/frontend/src/app/shared/components/header/header.component.html
+new file mode 100644
+index 0000000..98ee22c
+--- /dev/null
++++ b/frontend/src/app/shared/components/header/header.component.html
+@@ -0,0 +1,8 @@
++<header>
++  <mat-toolbar>
++    <button mat-raised-button (click)="sidenav.toggle()">Toggle drawer</button>
++    <span>HoaPham Application</span>
++    <span class="flex-fill"></span>
++    <app-navbar />
++  </mat-toolbar>
++</header>
+diff --git a/frontend/src/app/shared/components/header/header.component.ts b/frontend/src/app/shared/components/header/header.component.ts
+new file mode 100644
+index 0000000..f40b2cb
+--- /dev/null
++++ b/frontend/src/app/shared/components/header/header.component.ts
+@@ -0,0 +1,25 @@
++import { Component, Input } from "@angular/core";
++import { NavbarComponent } from "../navbar/navbar.component";
++import { MatToolbarModule } from "@angular/material/toolbar";
++import { MatDrawer, MatSidenavModule } from "@angular/material/sidenav";
++import { MatButtonModule } from "@angular/material/button";
++
++@Component({
++  standalone: true,
++  selector: "app-header",
++  imports: [
++    NavbarComponent,
++    MatToolbarModule,
++    MatSidenavModule,
++    MatButtonModule,
++  ],
++  templateUrl: "./header.component.html",
++  styleUrls: ["./header.component.css"],
++})
++export class HeaderComponent {
++  @Input() sidenav!: MatDrawer;
++
++  toggleSideNav() {
++    this.sidenav.toggle();
++  }
++}
+diff --git a/frontend/src/app/shared/components/navbar/navbar.component.css b/frontend/src/app/shared/components/navbar/navbar.component.css
+new file mode 100644
+index 0000000..fdb54c1
+--- /dev/null
++++ b/frontend/src/app/shared/components/navbar/navbar.component.css
+@@ -0,0 +1,14 @@
++ul {
++  list-style-type: none;
++  display: flex;
++  gap: 0.5vw;
++}
++
++/* a { */
++/*   text-decoration: none; */
++/*   color: var(--text-color); */
++/* } */
++/**/
++/* a:hover { */
++/*   text-decoration: underline; */
++/* } */
+diff --git a/frontend/src/app/shared/components/navbar/navbar.component.html b/frontend/src/app/shared/components/navbar/navbar.component.html
+new file mode 100644
+index 0000000..67a87e4
+--- /dev/null
++++ b/frontend/src/app/shared/components/navbar/navbar.component.html
+@@ -0,0 +1,13 @@
++<nav>
++  <ul>
++    <li><a routerLink="" routerLinkActive="active" mat-button>Home</a></li>
++    <li>
++      <a routerLink="first" routerLinkActive="active" mat-button>First Comp</a>
++    </li>
++    <li>
++      <a routerLink="second" routerLinkActive="active" mat-button
++        >Second Comp</a
++      >
++    </li>
++  </ul>
++</nav>
+diff --git a/frontend/src/app/shared/components/navbar/navbar.component.ts b/frontend/src/app/shared/components/navbar/navbar.component.ts
+new file mode 100644
+index 0000000..811206c
+--- /dev/null
++++ b/frontend/src/app/shared/components/navbar/navbar.component.ts
+@@ -0,0 +1,12 @@
++import { Component } from "@angular/core";
++import { MatButtonModule } from "@angular/material/button";
++import { RouterLink, RouterLinkActive } from "@angular/router";
++
++@Component({
++  standalone: true,
++  selector: "app-navbar",
++  imports: [RouterLink, RouterLinkActive, MatButtonModule],
++  templateUrl: "./navbar.component.html",
++  styleUrl: "./navbar.component.css",
++})
++export class NavbarComponent { }
+diff --git a/frontend/src/app/shared/components/sidebar/sidebar.component.css b/frontend/src/app/shared/components/sidebar/sidebar.component.css
+new file mode 100644
+index 0000000..e69de29
+diff --git a/frontend/src/app/shared/components/sidebar/sidebar.component.html b/frontend/src/app/shared/components/sidebar/sidebar.component.html
+new file mode 100644
+index 0000000..52a8ffc
+--- /dev/null
++++ b/frontend/src/app/shared/components/sidebar/sidebar.component.html
+@@ -0,0 +1 @@
++<p>sidebar works!</p>
+diff --git a/frontend/src/app/shared/components/sidebar/sidebar.component.ts b/frontend/src/app/shared/components/sidebar/sidebar.component.ts
+new file mode 100644
+index 0000000..8ce691a
+--- /dev/null
++++ b/frontend/src/app/shared/components/sidebar/sidebar.component.ts
+@@ -0,0 +1,10 @@
++import { Component } from "@angular/core";
++
++@Component({
++  standalone: true,
++  selector: "app-sidebar",
++  imports: [],
++  templateUrl: "./sidebar.component.html",
++  styleUrl: "./sidebar.component.css",
++})
++export class SidebarComponent { }
+diff --git a/frontend/src/styles.css b/frontend/src/styles.css
+index 2e62768..32b1935 100644
+--- a/frontend/src/styles.css
++++ b/frontend/src/styles.css
+@@ -1,30 +1,27 @@
+ :root {
+-	--bg-color: #ffffff;
+-	--text-color: #000000;
++  --bg-color: #ffffff;
++  --text-color: #000000;
+ }
+ 
+ @media (prefers-color-scheme: dark) {
+-	:root {
+-		--bg-color: #121212;
+-		--text-color: #e0e0e0;
+-	}
++  :root {
++    --bg-color: #121212;
++    --text-color: #e0e0e0;
++  }
+ }
+ 
+ * {
+-	margin: 0;
+-	padding: 0;
+-	box-sizing: border-box;
++  margin: 0;
++  padding: 0;
++  box-sizing: border-box;
+ }
+ 
+ html,
+ body,
+ label {
+-	height: 100%;
+-	background-color: var(--bg-color);
+-	color: var(--text-color);
+-}
+-
+-body {
+-	margin: 0;
+-	font-family: Roboto, "Helvetica Neue", sans-serif;
++  font-family: Roboto, "Helvetica Neue", sans-serif;
++  height: 100%;
++  background-color: var(--bg-color);
++  color: var(--text-color);
++  margin: 0;
+ }
+-- 
+2.49.0
+
