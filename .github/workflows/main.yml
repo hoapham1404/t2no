@@ -92,18 +92,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: dist
-          merge-multiple: true  # <-- This is important!
-
       - name: Upload release binaries
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
-          files: dist/*
+          files: ./build/bin/**
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
