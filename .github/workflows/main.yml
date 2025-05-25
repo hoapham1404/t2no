@@ -81,11 +81,27 @@ jobs:
         run: |
           wails build -platform ${{ matrix.build.platform }}
 
+      - name: Rename output binary
+        run: |
+          OS_NAME="${{ matrix.os }}"
+          case "$OS_NAME" in
+            ubuntu-latest)
+              mv build/bin/t2no build/bin/t2no-linux
+              ;;
+            windows-latest)
+              mv build/bin/t2no.exe build/bin/t2no-windows.exe
+              ;;
+            macos-latest)
+              mv build/bin/t2no build/bin/t2no-macos
+              ;;
+          esac
+        shell: bash
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ runner.os }}-binary
-          path: ./build/bin/**  # Update this to your actual output path
+          name: t2no-${{ matrix.os }}
+          path: build/bin/t2no-*
 
   release:
     needs: build
@@ -97,7 +113,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
-          files: dist/*
+          files: build/bin/t2no-*
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
