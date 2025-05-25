@@ -70,10 +70,37 @@ jobs:
           go install github.com/wailsapp/wails/v2/cmd/wails@latest
           echo "${{ github.workspace }}/go/bin" >> $GITHUB_PATH
 
-      - name: Build Wails app
+      - name: Build Wails app (Linux)
+        if: matrix.build.platform == 'linux/amd64'
         run: |
-          if [ "${{ matrix.build.platform }}" == "linux/amd64" ]; then
-            wails build -platform linux/amd64 -tags webkit2_41
-          else
-            wails build -platform ${{ matrix.build.platform }}
-          fi
+          wails build -platform linux/amd64 -tags webkit2_41
+
+      - name: Build Wails app (Non-Linux)
+        if: matrix.build.platform != 'linux/amd64'
+        run: |
+          wails build -platform ${{ matrix.build.platform }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+
+      - name: Upload release binaries
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**/*
