@@ -81,41 +81,46 @@ jobs:
         run: |
           wails build -platform ${{ matrix.build.platform }}
 
-      - name: Rename output binary
+      - name: Normalize and move build output
         run: |
           OS_NAME="${{ matrix.os }}"
+          mkdir -p release
+
           case "$OS_NAME" in
             ubuntu-latest)
-              mv build/bin/t2no build/bin/t2no-linux
+              cp build/bin/t2no release/t2no-linux
               ;;
             windows-latest)
-              mv build/bin/t2no.exe build/bin/t2no-windows.exe
+              cp build/bin/t2no.exe release/t2no-windows.exe
               ;;
             macos-latest)
-              mv build/bin/t2no build/bin/t2no-macos
+              cp build/bin/t2no.app/Contents/MacOS/t2no release/t2no-macos
               ;;
           esac
         shell: bash
 
-      - name: Upload build artifact
+      - name: Upload binary artifact
         uses: actions/upload-artifact@v4
         with:
           name: t2no-${{ matrix.os }}
-          path: build/bin/t2no-*
+          path: release/*
 
   release:
     needs: build
     runs-on: ubuntu-latest
 
     steps:
-      - name: Upload release binaries
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
-          files: build/bin/t2no-*
-          draft: false
-          prerelease: false
-          fail_on_unmatched_files: true
+          files: |
+            release/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
