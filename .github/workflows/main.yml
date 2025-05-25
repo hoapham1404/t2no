@@ -81,6 +81,12 @@ jobs:
         run: |
           wails build -platform ${{ matrix.build.platform }}
 
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ runner.os }}-binary
+          path: ./build/bin/**  # Update this to your actual output path
+
   release:
     needs: build
     runs-on: ubuntu-latest
