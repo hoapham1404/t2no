@@ -1,9 +1,7 @@
 name: Wails Build
 
-on:
-  push:
-    tags:
-      - '*' # Trigger on any tag push
+"on":
+  push: { branches: ["main"] }
 
 env:
   NODE_OPTIONS: "--max-old-space-size=4096"
@@ -92,18 +90,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: dist
-
-      - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
+          merge-multiple: true  # <-- This is important!
 
       - name: Upload release binaries
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/**/*
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          files: dist/*
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+          allow_update: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
