@@ -3,16 +3,16 @@ import { RouterOutlet } from "@angular/router";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 
 @Component({
-  standalone: true,
-  selector: "app-root",
-  imports: [RouterOutlet, MatSlideToggleModule],
-  template: `
+	standalone: true,
+	selector: "app-root",
+	imports: [RouterOutlet, MatSlideToggleModule],
+	template: `
     <h1>Welcome to {{ title }}!</h1>
     <mat-slide-toggle>Toggle me</mat-slide-toggle>
     <router-outlet />
   `,
-  styles: [],
+	styles: [],
 })
 export class AppComponent {
-  title = "frontend";
+	title = "frontend";
 }
