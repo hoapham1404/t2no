@@ -38,7 +38,8 @@ import { SidebarComponent } from "./shared/components/sidebar/sidebar.component"
       }
     `,
   ],
+
 })
 export class AppComponent {
-  title = "frontend";
+	title = "frontend";
 }
